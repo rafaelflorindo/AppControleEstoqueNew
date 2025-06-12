@@ -1,8 +1,10 @@
 //https://ionic.io/ionicons
+
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
 import Icon, { Ionicons } from 'react-native-vector-icons/Ionicons';
 
 import Home from './Home';

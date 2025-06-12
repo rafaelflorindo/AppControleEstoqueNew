@@ -1,22 +1,34 @@
 import { React, useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert } from 'react-native';
 import api from '../../Services/api'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function ListarProdutos({navigation}) {
+
+export default function ListarEstoque({navigation}) {
   const [produtos, setProdutos] = useState([]);
 
-  const fetchProdutos = async () => {
+  const fetchProdutos = async () => {  
+  const tokenLogin = await AsyncStorage.getItem('token');
     try {
-      const response = await api.get('/produtos');
+      const response = await api.get('/estoques/listAll', {
+        headers: {
+          Authorization: `Bearer ${tokenLogin}`,
+      }
+    });
       setProdutos(response.data);
     } catch (error) {
-      console.error('Erro ao buscar os produtos:', error);
+      console.error('Erro ao buscar os produtos no estoque:', error);
     }
   };
 
   const Delete = async (id)=>{
+    const tokenLogin = await AsyncStorage.getItem('token');
     try {
-      await api.delete(`/produtos/${id}`);
+      await api.delete(`/estoques/${id}`, {
+        headers: {
+          Authorization: `Bearer ${tokenLogin}`,
+      }
+    });
       Alert.alert("Sucesso", "Produto excluido com sucesso!");
     } catch (error) {
       console.error('Erro ao buscar os produtos:', error);
@@ -27,26 +39,31 @@ export default function ListarProdutos({navigation}) {
 
   useEffect(() => {
     fetchProdutos();
-  }, [produtos]);
+  }, []);
 
   return (
     <View style={styles.container}>
+      <Text style={styles.title}>Produtos em Estoque</Text>     
 
-      <Text style={styles.title}>Produtos Cadastrados</Text>
-      
       <TouchableOpacity style={styles.button} onPress={()=>navigation.navigate('Cadastro')}>
         <Text style={styles.buttonText}>Cadastrar</Text>
       </TouchableOpacity>
-
+      
+      <TouchableOpacity style={styles.button} onPress={()=>navigation.navigate('Main')}>
+        <Text style={styles.buttonText}>Voltar</Text>
+      </TouchableOpacity>
+      
       <FlatList
         style={styles.containerFlatlist}
         data={produtos}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.productItem}>
-            <Text style={styles.productText}>Nome: {item.nome}</Text>
-            <Text style={styles.productText}>Quantidade: {item.quantidadeMinima}</Text>
-            <Text style={styles.productText}>Descricao: R${item.descricao}</Text>
+            <Text style={styles.productText}>Nome: {item.Produto.nome}</Text>
+            <Text style={styles.productText}>Descricao: {item.descricao}</Text>
+            <Text style={styles.productText}>Quantidade: {item.quantidade}</Text>
+            <Text style={styles.productText}>Preço Compra: R$ {item.precoCompra}</Text>
+            <Text style={styles.productText}>Preço Venda: R$ {item.precoVenda}</Text>
           
             <View style={styles.buttonContainer}>
               <TouchableOpacity style={styles.editButton} 
@@ -56,7 +73,7 @@ export default function ListarProdutos({navigation}) {
 
               <TouchableOpacity style={styles.deleteButton} 
               onPress={()=>Delete(item.id)}>
-                <Text style={styles.buttonText}>Excluir</Text>
+                <Text style={styles.buttonText}>Inativar</Text>
               </TouchableOpacity>
             </View>          
           </View>
