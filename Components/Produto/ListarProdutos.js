@@ -3,12 +3,13 @@ import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert } from 'react
 import api from '../../Services/api'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function ListarProdutos({navigation}) {
+export default function ListarProdutos({ navigation }) {
   const [produtos, setProdutos] = useState([]);
-  
+
 
   const fetchProdutos = async () => {
     const tokenLogin = await AsyncStorage.getItem('token');
+    console.log("Token" + tokenLogin);
 
     try {
       const response = await api.get('/produtos/listAll', {
@@ -22,15 +23,36 @@ export default function ListarProdutos({navigation}) {
     }
   };
 
-  const Delete = async (id)=>{
+  const Ativar = async (id) => {
+    const tokenLogin = await AsyncStorage.getItem('token');
     try {
-      await api.delete(`/produtos/${id}`);
-      Alert.alert("Sucesso", "Produto excluido com sucesso!");
+      await api.put(`/produtos/ativar/${id}`, {}, {
+        headers: {
+          Authorization: `Bearer ${tokenLogin}`,
+        }
+      });
+      Alert.alert("Sucesso", "Produto ativado com sucesso!");
+      fetchProdutos(); // Atualiza a lista
     } catch (error) {
-      console.error('Erro ao buscar os produtos:', error);
-      Alert.alert("Erro", "Erro ao excluir o produto!!!");
+      console.error('Erro ao ativar o produto:', error);
+      Alert.alert("Erro", "Erro ao ativar o produto!");
     }
+  };
 
+  const Inativar = async (id) => {
+    const tokenLogin = await AsyncStorage.getItem('token');
+    try {
+      await api.put(`/produtos/inativar/${id}`, {}, {
+        headers: {
+          Authorization: `Bearer ${tokenLogin}`,
+        }
+      });
+      Alert.alert("Sucesso", "Produto inativado com sucesso!");
+      fetchProdutos(); // Atualiza a lista
+    } catch (error) {
+      console.error('Erro ao inativar o produto:', error);
+      Alert.alert("Erro", "Erro ao inativar o produto!");
+    }
   };
 
   useEffect(() => {
@@ -40,34 +62,38 @@ export default function ListarProdutos({navigation}) {
   return (
     <View style={styles.container}>
 
-      <Text style={styles.title}>Prrodutos Cadastrados</Text>
-      
-      <TouchableOpacity style={styles.button} onPress={()=>navigation.navigate('Cadastro')}>
+      <Text style={styles.title}>Produtos Cadastrados</Text>
+
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Cadastro')}>
         <Text style={styles.buttonText}>Cadastrar</Text>
       </TouchableOpacity>
 
       <FlatList
-        style={[styles.containerFlatlist, {color: 'red'}]}
+        style={[styles.containerFlatlist, { color: 'red' }]}
         data={produtos}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.productItem}>
-            <Text style={styles.productText}>Nome: {item.nome}</Text>
-            <Text style={styles.productText}>Quantidade: {item.quantidadeMinima}</Text>
-            <Text style={styles.productText}>Descricao: R${item.descricao}</Text>
-          
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.editButton} 
-              onPress={()=>navigation.navigate('Editar',{id:item.id})}>
-                <Text style={styles.buttonText}>Editar</Text>
-              </TouchableOpacity>
+  <Text style={styles.productName}>{item.nome}</Text>
+  <Text style={styles.productInfo}>📦 Quantidade: {item.quantidadeMinima}</Text>
+  <Text style={styles.productInfo}>📝 {item.descricao}</Text>
 
-              <TouchableOpacity style={styles.deleteButton} 
-              onPress={()=>Delete(item.id)}>
-                <Text style={styles.buttonText}>Excluir</Text>
-              </TouchableOpacity>
-            </View>          
-          </View>
+  <View style={styles.buttonContainer}>
+    <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('Editar', { id: item.id })}>
+      <Text style={styles.buttonText}>✏️ Editar</Text>
+    </TouchableOpacity>
+
+    {item.ativo ? (
+      <TouchableOpacity style={styles.inativarButton} onPress={() => Inativar(item.id)}>
+        <Text style={styles.buttonText}>❌ Inativar</Text>
+      </TouchableOpacity>
+    ) : (
+      <TouchableOpacity style={styles.ativarButton} onPress={() => Ativar(item.id)}>
+        <Text style={styles.buttonText}>✅ Ativar</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+</View>
         )}
       />
     </View>
@@ -91,22 +117,27 @@ const styles = StyleSheet.create({
   containerFlatlist: {
     width: '90%',
   },
+  productName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
+  },
+  productInfo: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 3,
+  },
   productItem: {
-    marginBottom: 10,
+    marginBottom: 12,
     padding: 15,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: '#fff',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  productText: {
-    fontSize: 16,
-    color: '#555',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   button: {
     backgroundColor: '#007bff',
@@ -128,11 +159,19 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginRight: 10,
   },
-  deleteButton: {
-    backgroundColor: '#dc3545',
+  ativarButton: {
+    backgroundColor: '#007bff', // verde
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 5,
+    marginRight: 10,
+  },
+  inativarButton: {
+    backgroundColor: '#dc3545', // vermelho
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    marginRight: 10,
   },
   buttonText: {
     color: '#fff',

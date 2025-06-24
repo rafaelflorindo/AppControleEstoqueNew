@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../Services/api'
 
 const CadastroUsuario = ({navigation}) => {
@@ -9,8 +9,10 @@ const CadastroUsuario = ({navigation}) => {
   const [senha, setSenha] = useState("");
   const [telefone, setTelefone] = useState('');
   const [reSenha, setReSenha] = useState("");
+  const [permissao, setPermissao] = useState("comum");
   
   const handleSubmit = async () => {
+    const tokenLogin = await AsyncStorage.getItem('token');
     if (!nome || !email || !senha || !reSenha || !telefone) {
       Alert.alert("Erro", "Preencha todos os campos!");
       return;
@@ -20,9 +22,13 @@ const CadastroUsuario = ({navigation}) => {
       Alert.alert("Erro", "Campos de senha são diferentes e devem ser iguais!");
       return;
     }
-
+ 
     try {
-      const response = await api.post("/usuarios", {nome, email, senha, telefone});
+      const response = await api.post("/usuarios/create", {nome, email, senha, telefone, permissao}, {
+        headers: {
+          Authorization: `Bearer ${tokenLogin}`,
+        }
+      });
 
       Alert.alert("Sucesso", "Usuário cadastrado com sucesso!");
       console.log("Usuário cadastrado com sucesso!");
@@ -79,6 +85,9 @@ const CadastroUsuario = ({navigation}) => {
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>Cadastrar</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={styles.buttonCancel} onPress={() => navigation.goBack()}>
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </TouchableOpacity>
     </View>
   );
 };
@@ -162,7 +171,13 @@ const styles = StyleSheet.create({
 
     fontWeight: "bold", 
 
-  }, 
+  }, buttonCancel: {
+    backgroundColor: '#ccc',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10
+  }
 
 }); 
 export default CadastroUsuario;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert } from "react-native";
 import api from '../../Services/api'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import ListarUsuarios from "./ListarUsuarios";
 
@@ -11,13 +12,16 @@ const EditarUsuario = ({ route, navigation }) => {
   const [telefone, setTelefone] = useState();
 
   const fetchUsuarios = async () => {
+    const tokenLogin = await AsyncStorage.getItem('token');  
     try {
-      const response = await api.get(`/usuarios/${id}`);
-      const usuario = response.data;
-
+      const response = await api.get(`/usuarios/listOne/${id}`, {
+        headers: {
+          Authorization: `Bearer ${tokenLogin}`,
+        }
+    });
+      const usuario = response.data.data;
       setNome(usuario.nome);
       setTelefone(usuario.telefone.toString());
-      setPreco(usuario.preco.toString());
     } catch (error) {
       console.error('Erro ao buscar os usuarios:', error);
     }
@@ -26,15 +30,20 @@ const EditarUsuario = ({ route, navigation }) => {
     fetchUsuarios();
   }, []);
   const handleSubmit = async () => {
+    const tokenLogin = await AsyncStorage.getItem('token'); 
     if (!nome || !telefone) {
       Alert.alert("Erro", "Preencha todos os campos!");
       return;
     }
     try {
-      const response = await api.put(`/usuarios/${id}`, {
+      const response = await api.put(`/usuarios/update/${id}`, {
         nome,
         telefone
-      });
+      }, {
+        headers: {
+          Authorization: `Bearer ${tokenLogin}`,
+        }
+    });
       Alert.alert("Sucesso", "Usuário Alterado com sucesso!");
       navigation.navigate('ListarUsuarios');
     } catch (error) {

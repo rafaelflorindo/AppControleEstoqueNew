@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert } from "react-native";
 import api from '../../Services/api'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Editar = ({ route, navigation }) => {
   const { id } = route.params;
@@ -10,8 +11,14 @@ const Editar = ({ route, navigation }) => {
   const [descricao, setDescricao] = useState();
 
   const fetchProdutos = async () => {
+    const tokenLogin = await AsyncStorage.getItem('token');   
     try {
-      const response = await api.get(`/produtos/${id}`);
+      const response = await api.get(`/produtos/listOne/${id}`, {
+        headers: {
+          Authorization: `Bearer ${tokenLogin}`,
+        }
+  
+    });
       const produto = response.data;
 
       setNome(produto.nome);
@@ -25,16 +32,21 @@ const Editar = ({ route, navigation }) => {
     fetchProdutos();
   }, []);
   const handleSubmit = async () => {
+    const tokenLogin = await AsyncStorage.getItem('token');   
+
     if (!nome || !descricao || !quantidadeMinima) {
       Alert.alert("Erro", "Preencha todos os campos!");
       return;
     }
     try {
-      const response = await api.put(`/produtos/${id}`, {
+      const response = await api.put(`/produtos/update/${id}`, {
         nome,
         descricao,
         quantidadeMinima: parseInt(quantidadeMinima), // Convertendo para número inteiro
-      });
+      }, {
+        headers: {
+          Authorization: `Bearer ${tokenLogin}`,
+        }});
       Alert.alert("Sucesso", "Produto Alterado com sucesso!");
       navigation.goBack();
     } catch (error) {

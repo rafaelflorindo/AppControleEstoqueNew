@@ -1,48 +1,83 @@
 import { React, useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert } from 'react-native';
-import api from '../../Services/api'
+import api from '../../Services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function ListarUsuarios({navigation}) {
+export default function ListarUsuarios({ navigation }) {
   const [usuarios, setUsuarios] = useState([]);
   const [permissao, setPermissao] = useState(null);
+  const [usuarioLogadoId, setUsuarioLogadoId] = useState(null); // opcional
 
   const fetchUsuarios = async () => {
+    const tokenLogin = await AsyncStorage.getItem('token');
+
     try {
-      const resposta = await api.get('/usuarios'); // retorna lista
-      setUsuarios(resposta.data);
+      const response = await api.get('/usuarios/listAll', {
+        headers: {
+          Authorization: `Bearer ${tokenLogin}`,
+        }
+      });
+
+
+  setUsuarios(response.data.data); // <- Aqui está certo
+
     } catch (error) {
-      console.error('Erro ao buscar os usuarios:', error);
+      console.error('Erro ao buscar os usuários:', error);
     }
   };
 
   const buscarPermissaoUsuarioLogado = async () => {
     try {
-      const usuarioLogado = await AsyncStorage.getItem('usuario'); // ou token
+      const usuarioLogado = await AsyncStorage.getItem('usuario');
       if (usuarioLogado) {
         const usuario = JSON.parse(usuarioLogado);
-        setPermissao(usuario.data.permissao); 
+        setPermissao(usuario.data.permissao);
+        setUsuarioLogadoId(usuario.data.id); // caso queira impedir autoexclusão
       }
     } catch (error) {
       console.error("Erro ao buscar permissão:", error);
     }
   };
 
-  const Delete = async (id) => {
+  const Ativar = async (id) => {
+    const tokenLogin = await AsyncStorage.getItem('token');
     try {
-      await api.delete(`/usuarios/${id}`);
-      Alert.alert("Sucesso", "Usuário excluído com sucesso!");
-      fetchUsuarios(); // atualizar a lista
+      await api.put(`/usuarios/ativar/${id}`, {}, {
+        headers: {
+          Authorization: `Bearer ${tokenLogin}`,
+        }
+      });
+      Alert.alert("Sucesso", "Usuario ativado com sucesso!");
+      fetchUsuarios(); // Atualiza a lista
     } catch (error) {
-      console.error('Erro ao excluir usuário:', error);
-      Alert.alert("Erro", "Erro ao excluir o usuário!!!");
+      console.error('Erro ao ativar o produto:', error);
+      Alert.alert("Erro", "Erro ao ativar o produto!");
+    }
+  };
+
+  const Inativar = async (id) => {
+    const tokenLogin = await AsyncStorage.getItem('token');
+    try {
+      await api.put(`/usuarios/inativar/${id}`, {}, {
+        headers: {
+          Authorization: `Bearer ${tokenLogin}`,
+        }
+      });
+      Alert.alert("Sucesso", "Usuario inativado com sucesso!");
+      fetchUsuarios(); // Atualiza a lista
+    } catch (error) {
+      console.error('Erro ao inativar o produto:', error);
+      Alert.alert("Erro", "Erro ao inativar o produto!");
     }
   };
 
   useEffect(() => {
-    fetchUsuarios();
     buscarPermissaoUsuarioLogado();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchUsuarios();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <View style={styles.container}>
@@ -60,10 +95,10 @@ export default function ListarUsuarios({navigation}) {
         data={usuarios}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={styles.productItem}>
-            <Text style={styles.productText}>Nome: {item.nome}</Text>
-            <Text style={styles.productText}>Telefone: {item.telefone}</Text>
-            <Text style={styles.productText}>E-mail: {item.email}</Text>
+          <View style={styles.userItem}>
+            <Text style={styles.userName}>{item.nome}</Text>
+            <Text style={styles.userInfo}>📞 {item.telefone}</Text>
+            <Text style={styles.userInfo}>✉️ {item.email}</Text>
 
             {permissao === 'adm' && (
               <View style={styles.buttonContainer}>
@@ -71,15 +106,18 @@ export default function ListarUsuarios({navigation}) {
                   style={styles.editButton}
                   onPress={() => navigation.navigate('EditarUsuario', { id: item.id })}
                 >
-                  <Text style={styles.buttonText}>Editar</Text>
+                  <Text style={styles.buttonText}>✏️ Editar</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => Delete(item.id)}
-                >
-                  <Text style={styles.buttonText}>Excluir</Text>
-                </TouchableOpacity>
+                {item.ativo ? (
+      <TouchableOpacity style={styles.inativarButton} onPress={() => Inativar(item.id)}>
+        <Text style={styles.buttonText}>❌ Inativar</Text>
+      </TouchableOpacity>
+    ) : (
+      <TouchableOpacity style={styles.ativarButton} onPress={() => Ativar(item.id)}>
+        <Text style={styles.buttonText}>✅ Ativar</Text>
+      </TouchableOpacity>
+    )}
               </View>
             )}
           </View>
@@ -88,7 +126,6 @@ export default function ListarUsuarios({navigation}) {
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -107,22 +144,27 @@ const styles = StyleSheet.create({
   containerFlatlist: {
     width: '90%',
   },
-  productItem: {
-    marginBottom: 10,
+  userItem: {
+    marginBottom: 12,
     padding: 15,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
-  productText: {
-    fontSize: 16,
+  userName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  userInfo: {
+    fontSize: 14,
     color: '#555',
+    marginBottom: 2,
   },
   button: {
     backgroundColor: '#007bff',
@@ -143,16 +185,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderRadius: 5,
     marginRight: 10,
-  },
-  deleteButton: {
-    backgroundColor: '#dc3545',
+  },  ativarButton: {
+    backgroundColor: '#007bff', // verde
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 5,
+    marginRight: 10,
+  },
+  inativarButton: {
+    backgroundColor: '#dc3545', // vermelho
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    marginRight: 10,
   },
   buttonText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
   },
+
 });

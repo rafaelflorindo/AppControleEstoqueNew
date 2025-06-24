@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 import api from "../../Services/api"
 import ListarProdutos from "./ListarProdutos";
@@ -14,19 +16,25 @@ const CadastroScreen = ({navigation}) => {
       Alert.alert("Erro", "Preencha todos os campos!");
       return;
     }
+    const tokenLogin = await AsyncStorage.getItem('token');    
+    //Alert.alert("olá");
     try {
-      const response = await api.post("/produtos", {
+      const response = await api.post("/produtos/create", {
         nome,
         descricao, // Convertendo para número
         quantidadeMinima: parseInt(quantidadeMinima), // Convertendo para número inteiro
-      });
+      }, {
+        headers: {
+            Authorization: `Bearer ${tokenLogin}`,
+        }
+    });
       Alert.alert("Sucesso", "Produto cadastrado com sucesso!");
       console.log("Produto cadastrado com sucesso!");
       setNome("");
       setDescricao("");
       setQuantidadeMinima("");
      
-      navigation.navigate('ListarProdutos');
+      navigation.navigate('Main');
 
     } catch (error) {
       console.error("Erro ao cadastrar:", error);
@@ -62,90 +70,65 @@ const CadastroScreen = ({navigation}) => {
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>Cadastrar</Text>
       </TouchableOpacity>
+       <TouchableOpacity style={styles.buttonCancel} onPress={() => navigation.goBack()}>
+              <Text style={styles.buttonText}>Cancelar</Text>
+            </TouchableOpacity>
     </View>
   );
 };
 const styles = StyleSheet.create({ 
-
   container: { 
-
     flex: 1, 
-
     padding: 20, 
-
     justifyContent: "center", 
-
     backgroundColor: "#f5f5f5", // cor de fundo leve 
-
   }, 
-
   title: { 
-
     fontSize: 24, 
-
     fontWeight: "bold", 
-
     marginBottom: 25, 
-
     color: "#222", 
-
     textAlign: "center", 
-
-  }, 
-
+ }, 
   label: { 
-
     fontSize: 16, 
-
     fontWeight: "600", 
-
     marginBottom: 6, 
-
     color: "#444", 
-
   }, 
-
   input: { 
-
     height: 45, 
-
     borderWidth: 1, 
-
     borderColor: "#ccc", 
-
     borderRadius: 6, 
-
     marginBottom: 18, 
-
     paddingHorizontal: 12, 
-
     backgroundColor: "#fff", 
-
   }, 
 
   button: { 
-
     backgroundColor: "#0056b3", // azul mais escuro 
-
     paddingVertical: 14, 
-
     borderRadius: 6, 
-
     alignItems: "center", 
-
     marginTop: 10, 
-
   }, 
-
   buttonText: { 
-
     color: "#fff", 
-
     fontSize: 16, 
-
     fontWeight: "bold", 
-
-  }, 
-
+  }, buttonCancel: {
+    backgroundColor: '#ccc',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10
+  }, buttonCancel: {
+    backgroundColor: '#ccc',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10
+  } 
 }); 
 export default CadastroScreen;
