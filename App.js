@@ -18,6 +18,7 @@ import CadastroUsuario from './Components/Usuario/CadastroUsuario';
 import EditarUsuario from './Components/Usuario/EditarUsuario'
 import Login from './Components/Autenticacao/Login';
 import Sair from './Components/Autenticacao/Sair';
+import PerfilUsuario from './Components/Usuario/PerfilUsuario';
 
 import CadastroEstoque from './Components/Estoque/CadastroEstoque'
 import ListarEstoque from './Components/Estoque/ListarEstoque'
@@ -68,7 +69,7 @@ function Tabs() {
           ),
         headerShown: false }
         }/>
-        <Tab.Screen name="Perfil" component={ListarUsuarios} 
+        <Tab.Screen name="Perfil" component={PerfilUsuario} 
       options={
         { 
           tabBarIcon:({color, size})=>(
@@ -105,6 +106,7 @@ export default function App() {
         <Stack.Screen name="Editar" component={Editar} options={{ headerShown: false }} />
         <Stack.Screen name="Cadastro" component={Cadastro} options={{ headerShown: false }} />
 
+        <Stack.Screen name="PerfilUsuario" component={PerfilUsuario} options={{ headerShown: false }} />
         <Stack.Screen name="CadastroUsuario" component={CadastroUsuario} options={{ headerShown: false }} />
         <Stack.Screen name="EditarUsuario" component={EditarUsuario} options={{ headerShown: false }} />
         <Stack.Screen name="ListarUsuarios" component={ListarUsuarios} options={{ headerShown: false }} />

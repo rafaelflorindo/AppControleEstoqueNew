@@ -24,7 +24,7 @@ const Login = ({ navigation }) => {
         setSenha("");
 
         await AsyncStorage.setItem('token', response.data.token);
-        await AsyncStorage.setItem('usuario', usuario);
+        await AsyncStorage.setItem('usuario', JSON.stringify(usuario));
                 
         /*navigation.navigate("Main", { 
           screen: 'Home', 
