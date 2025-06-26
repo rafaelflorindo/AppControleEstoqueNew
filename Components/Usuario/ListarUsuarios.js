@@ -3,6 +3,8 @@ import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert } from 'react
 import api from '../../Services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { Ionicons } from '@expo/vector-icons'; // Para o ícone do FAB
+
 export default function ListarUsuarios({ navigation }) {
   const [usuarios, setUsuarios] = useState([]);
   const [permissao, setPermissao] = useState(null);
@@ -123,6 +125,12 @@ export default function ListarUsuarios({ navigation }) {
           </View>
         )}
       />
+       <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('CadastroUsuario')}
+      >
+        <Ionicons name="add" size={30} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -204,5 +212,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
+  fab: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    right: 30,
+    bottom: 30,
+    backgroundColor: '#007bff', // Cor primária para o FAB
+    borderRadius: 30,
+    elevation: 8, // Sombra para Android
+    shadowColor: '#000', // Sombra para iOS
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  }, 
 
 });

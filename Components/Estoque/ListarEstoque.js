@@ -1,84 +1,96 @@
-import { React, useState, useEffect } from 'react';
+// screens/ListarEstoque.js
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert } from 'react-native';
-import api from '../../Services/api'
+import api from '../../Services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import ProductItem from './ProductItem.js'; // Importe o novo componente
 
-export default function ListarEstoque({navigation}) {
+import { Ionicons } from '@expo/vector-icons'; // Para o ícone do FAB
+
+export default function ListarEstoque({ navigation }) {
   const [produtos, setProdutos] = useState([]);
+  const [loading, setLoading] = useState(true); // Adicionar estado de loading
 
-  const fetchProdutos = async () => {  
-  const tokenLogin = await AsyncStorage.getItem('token');
+  const fetchProdutos = async () => {
+    setLoading(true); // Iniciar loading
+    const tokenLogin = await AsyncStorage.getItem('token');
     try {
       const response = await api.get('/estoques/listAll', {
         headers: {
           Authorization: `Bearer ${tokenLogin}`,
-      }
-    });
+        },
+      });
+      console.log('Produtos recebidos:', response.data);
       setProdutos(response.data);
     } catch (error) {
       console.error('Erro ao buscar os produtos no estoque:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os produtos do estoque.');
+    } finally {
+      setLoading(false); // Finalizar loading
     }
   };
 
-  const Delete = async (id)=>{
+  const handleDelete = async (id) => { // Renomeado para handleDelete
     const tokenLogin = await AsyncStorage.getItem('token');
     try {
       await api.delete(`/estoques/${id}`, {
         headers: {
           Authorization: `Bearer ${tokenLogin}`,
-      }
-    });
-      Alert.alert("Sucesso", "Produto excluido com sucesso!");
+        },
+      });
+      Alert.alert('Sucesso', 'Produto excluído com sucesso!');
+      fetchProdutos(); // Atualiza a lista após exclusão
     } catch (error) {
-      console.error('Erro ao buscar os produtos:', error);
-      Alert.alert("Erro", "Erro ao excluir o produto!!!");
+      console.error('Erro ao excluir o produto:', error);
+      Alert.alert('Erro', 'Erro ao excluir o produto!!!');
     }
+  };
 
+  const handleEdit = (id) => {
+    navigation.navigate('Editar', { id: id });
   };
 
   useEffect(() => {
     fetchProdutos();
-  }, []);
+    // Adicionar um listener para recarregar quando a tela estiver focada
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchProdutos();
+    });
+    return unsubscribe; // Limpar o listener ao desmontar
+  }, [navigation]);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Produtos em Estoque</Text>     
+      <Text style={styles.title}>Produtos em Estoque</Text>
 
-      <TouchableOpacity style={styles.button} onPress={()=>navigation.navigate('Cadastro')}>
-        <Text style={styles.buttonText}>Cadastrar</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity style={styles.button} onPress={()=>navigation.navigate('Main')}>
-        <Text style={styles.buttonText}>Voltar</Text>
-      </TouchableOpacity>
-      
-      <FlatList
-        style={styles.containerFlatlist}
-        data={produtos}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.productItem}>
-            <Text style={styles.productText}>Nome: {item.Produto.nome}</Text>
-            <Text style={styles.productText}>Descricao: {item.descricao}</Text>
-            <Text style={styles.productText}>Quantidade: {item.quantidade}</Text>
-            <Text style={styles.productText}>Preço Compra: R$ {item.precoCompra}</Text>
-            <Text style={styles.productText}>Preço Venda: R$ {item.precoVenda}</Text>
-          
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.editButton} 
-              onPress={()=>navigation.navigate('Editar',{id:item.id})}>
-                <Text style={styles.buttonText}>Editar</Text>
-              </TouchableOpacity>
+      {loading ? (
+        <Text style={styles.loadingText}>Carregando produtos...</Text>
+      ) : produtos.length === 0 ? (
+        <Text style={styles.emptyListText}>Nenhum produto em estoque. Cadastre um!</Text>
+      ) : (
+        <FlatList
+          style={styles.containerFlatlist}
+          data={produtos}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <ProductItem
+              item={item}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+            />
+          )}
+          contentContainerStyle={styles.flatListContent}
+        />
+      )}
 
-              <TouchableOpacity style={styles.deleteButton} 
-              onPress={()=>Delete(item.id)}>
-                <Text style={styles.buttonText}>Inativar</Text>
-              </TouchableOpacity>
-            </View>          
-          </View>
-        )}
-      />
+      {/* Floating Action Button (FAB) para Cadastrar */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('CadastroEstoque')}
+      >
+        <Ionicons name="add" size={30} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -86,66 +98,49 @@ export default function ListarEstoque({navigation}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f4f4',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 50,
+    backgroundColor: '#f8f8f8', // Fundo mais suave
+    paddingTop: 40, // Ajuste para o status bar
+    paddingHorizontal: 20,
   },
   title: {
-    fontSize: 22,
+    fontSize: 26, // Título maior
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 20,
     color: '#333',
+    alignSelf: 'center',
   },
   containerFlatlist: {
-    width: '90%',
+    width: '100%',
   },
-  productItem: {
-    marginBottom: 10,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  flatListContent: {
+    paddingBottom: 80, // Espaço para o FAB não cobrir o último item
   },
-  productText: {
-    fontSize: 16,
-    color: '#555',
+  loadingText: {
+    fontSize: 18,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 50,
   },
-  button: {
-    backgroundColor: '#007bff',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    marginBottom: 10,
-    width: '90%',
-    alignItems: 'center'
+  emptyListText: {
+    fontSize: 18,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 50,
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    marginTop: 10,
-  },
-  editButton: {
-    backgroundColor: '#28a745',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  deleteButton: {
-    backgroundColor: '#dc3545',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+  fab: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    right: 30,
+    bottom: 30,
+    backgroundColor: '#007bff', // Cor primária para o FAB
+    borderRadius: 30,
+    elevation: 8, // Sombra para Android
+    shadowColor: '#000', // Sombra para iOS
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
 });

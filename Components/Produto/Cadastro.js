@@ -70,6 +70,9 @@ const CadastroScreen = ({navigation}) => {
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>Cadastrar</Text>
       </TouchableOpacity>
+
+   
+
        <TouchableOpacity style={styles.buttonCancel} onPress={() => navigation.goBack()}>
               <Text style={styles.buttonText}>Cancelar</Text>
             </TouchableOpacity>
@@ -129,6 +132,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: 'center',
     marginTop: 10
-  } 
+  }
 }); 
 export default CadastroScreen;

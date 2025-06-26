@@ -29,6 +29,7 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function Tabs() {
+  
   return (
     <Tab.Navigator initialRouteName="Home" 
     screenOptions={{
@@ -53,7 +54,7 @@ function Tabs() {
           ),
         headerShown: false }
         } />
-        <Tab.Screen name="Estoque" component={CadastroEstoque} 
+        <Tab.Screen name="Estoque" component={ListarEstoque} 
       options={
         { 
           tabBarIcon:({color, size})=>(
@@ -112,6 +113,7 @@ export default function App() {
         <Stack.Screen name="ListarUsuarios" component={ListarUsuarios} options={{ headerShown: false }} />
         <Stack.Screen name="ListarProdutos" component={ListarProdutos} options={{ headerShown: false }} />    
         <Stack.Screen name="Sair" component={Sair} options={{ headerShown: false }} />    
+
 
 
         <Stack.Screen name="CadastroEstoque" component={CadastroEstoque} options={{ headerShown: false }} />

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { ScrollView, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { Picker } from '@react-native-picker/picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import api from "../../Services/api";
 
-const Cadastro = ({ navigation }) => {
+const CadastroEstoque = ({ navigation }) => {
   const [marca, setMarca] = useState("");
   const [descricao, setDescricao] = useState("");
   const [quantidade, setQuantidade] = useState("");
@@ -12,15 +13,19 @@ const Cadastro = ({ navigation }) => {
   const [lucro, setLucro] = useState("");
 
   const [produtos, setProdutos] = useState([]);
-  const [selectedProdutoId, setSelectedProdutoId] = useState("0");
+  const [selectedProdutoId, setSelectedProdutoId] = useState("0"); // Inicializa com "0" para a opção de placeholder
 
   useEffect(() => {
     const fetchProdutos = async () => {
+      const token = await AsyncStorage.getItem('token');
       try {
-        const response = await api.get('/produtos/listAll');
+        const response = await api.get('/produtos/listAll', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setProdutos(response.data);
       } catch (error) {
-        console.error('Erro ao buscar os produtos:', error);
+        console.error('Erro ao buscar os produtos:', error.response?.data || error.message);
+        Alert.alert("Erro", "Não foi possível carregar a lista de produtos.");
       }
     };
 
@@ -32,8 +37,14 @@ const Cadastro = ({ navigation }) => {
   };
 
   const handleSubmit = async () => {
-    if (!marca || !descricao || !quantidade || !precoCompra || !lucro || selectedProdutoId === "0") {
-      Alert.alert("Erro", "Preencha todos os campos!");
+    const tokenLogin = await AsyncStorage.getItem('token');
+    if (!tokenLogin) {
+      Alert.alert("Erro de Autenticação", "Token de autenticação não encontrado.");
+      return;
+    }
+
+    if (!marca || !descricao || !quantidade || !precoCompra || !lucro || selectedProdutoId === "0") { // Adicionado verificação para selectedProdutoId
+      Alert.alert("Erro", "Preencha todos os campos e selecione um produto válido!");
       return;
     }
 
@@ -42,22 +53,35 @@ const Cadastro = ({ navigation }) => {
     const quantidadeNum = parseInt(quantidade);
 
     if (isNaN(preco) || isNaN(lucroPercentual) || isNaN(quantidadeNum)) {
-      Alert.alert("Erro", "Verifique os valores numéricos inseridos!");
+      Alert.alert("Erro", "Verifique os valores numéricos inseridos (Quantidade, Preço de Compra, Lucro)!");
       return;
     }
 
     const precoVenda = calcularPrecoVenda(preco, lucroPercentual);
 
+    // Objeto (payload) a ser enviado para o backend
+    const payload = {
+      marca,
+      descricao,
+      quantidade: quantidadeNum,
+      precoCompra: preco,
+      lucro: lucroPercentual,
+      precoVenda,
+      ativo: 1, // <--- ADICIONADO: Campo 'ativo' que estava faltando
+      produtoId: parseInt(selectedProdutoId), // <--- CORRIGIDO: Chave para 'produtoId' (camelCase)
+    };
+
+    console.log("Payload enviado para o backend:", payload); // Para depuração
+
     try {
-      await api.post("/estoques/create", {
-        marca,
-        descricao,
-        quantidade: quantidadeNum,
-        precoCompra: preco,
-        lucro: lucroPercentual,
-        precoVenda,
-        ProdutoId: parseInt(selectedProdutoId),
+      const response = await api.post("/estoques/create", payload, {
+        headers: {
+          Authorization: `Bearer ${tokenLogin}`,
+          'Content-Type': 'application/json', // Garante que o tipo de conteúdo é JSON
+        },
       });
+
+      console.log("Resposta do backend:", response.data); // Para depuração
 
       Alert.alert("Sucesso", "Produto inserido no Estoque com sucesso!");
 
@@ -67,12 +91,12 @@ const Cadastro = ({ navigation }) => {
       setQuantidade("");
       setPrecoCompra("");
       setLucro("");
-      setSelectedProdutoId("0");
+      setSelectedProdutoId("0"); // Reseta para a opção "Selecione um produto"
 
       navigation.navigate('ListarEstoque');
     } catch (error) {
-      console.error("Erro ao cadastrar:", error);
-      Alert.alert("Erro", "Não foi possível inserir o produto no estoque");
+      console.error("Erro ao cadastrar:", error.response?.data || error.message); // Log mais detalhado do erro
+      Alert.alert("Erro", `Não foi possível inserir o produto no estoque. ${error.response?.data?.message || 'Verifique sua conexão ou tente novamente.'}`);
     }
   };
 
@@ -136,8 +160,11 @@ const Cadastro = ({ navigation }) => {
       />
 
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Cadastrar</Text>
+        <Text style={styles.buttonText}>Salvar</Text>
       </TouchableOpacity>
+       <TouchableOpacity style={styles.buttonCancel} onPress={() => navigation.goBack()}>
+                    <Text style={styles.buttonText}>Cancelar</Text>
+                  </TouchableOpacity>
     </ScrollView>
   );
 };
@@ -149,8 +176,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
   },
   content: {
-    justifyContent: "center", // Aqui é onde deve estar
-    flexGrow: 1, // Garante que o conteúdo se expanda
+    justifyContent: "center",
+    flexGrow: 1,
   },
   title: {
     fontSize: 24,
@@ -185,7 +212,14 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
-  },
+  },buttonCancel: {
+  backgroundColor: "#6c757d", // Uma cor cinza para "Cancelar"
+  paddingVertical: 14,
+  borderRadius: 6,
+  alignItems: "center",
+  marginTop: 10, // Espaçamento do botão Salvar
+  marginBottom: 20, // Espaçamento inferior para o ScrollView
+},
 });
 
-export default Cadastro;
+export default CadastroEstoque;

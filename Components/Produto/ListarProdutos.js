@@ -2,6 +2,8 @@ import { React, useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert } from 'react-native';
 import api from '../../Services/api'
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons'; // Para o ícone do FAB
+
 
 export default function ListarProdutos({ navigation }) {
   const [produtos, setProdutos] = useState([]);
@@ -63,11 +65,6 @@ export default function ListarProdutos({ navigation }) {
     <View style={styles.container}>
 
       <Text style={styles.title}>Produtos Cadastrados</Text>
-
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Cadastro')}>
-        <Text style={styles.buttonText}>Cadastrar</Text>
-      </TouchableOpacity>
-
       <FlatList
         style={[styles.containerFlatlist, { color: 'red' }]}
         data={produtos}
@@ -92,10 +89,18 @@ export default function ListarProdutos({ navigation }) {
         <Text style={styles.buttonText}>✅ Ativar</Text>
       </TouchableOpacity>
     )}
+     {/* Floating Action Button (FAB) para Cadastrar */}
+      
   </View>
 </View>
         )}
       />
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('Cadastro')}
+      >
+        <Ionicons name="add" size={30} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -178,4 +183,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
+  fab: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    right: 30,
+    bottom: 30,
+    backgroundColor: '#007bff', // Cor primária para o FAB
+    borderRadius: 30,
+    elevation: 8, // Sombra para Android
+    shadowColor: '#000', // Sombra para iOS
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  }, 
 });
